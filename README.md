@@ -149,9 +149,19 @@ networks:
    * Expand **Recipe Automation & Template Editor** to select a preset, edit existing stages, or build custom multi-stage programs.
    * Stages support target setpoints with progression triggers based on elapsed time, probe values (`>=` or `<=`), or indefinite holds.
 
-## Support
+## Disclaimer and Safety Warning
 
-This project is an independent open-source tool and is not affiliated with, endorsed by, or supported by MAK Grills.
+**This is an unofficial, community-created project and is not affiliated with, endorsed by, or supported by MAK Grills.**
+
+This software and hardware guide is provided "as is," without warranty of any kind. Modifying or controlling a wood pellet grill involves managing live fire. By building and using this project, you acknowledge and agree that:
+
+* You are assuming all risks associated with interfacing custom hardware with a live-fire appliance.
+* You should **never** leave a running grill unattended, regardless of remote monitoring or alarm capabilities.
+* The creator(s) and contributor(s) of this repository are not liable for any property damage, ruined food, personal injury, or catastrophic hardware failure resulting from the use of this code or hardware configuration.
+
+Always prioritize physical safety and follow the manufacturer's original safety and operating guidelines for your grill.
+
+## Support
 
 If this project saved you some headaches or kept your grill running, you can help me buy another bag of pellets here:
 
