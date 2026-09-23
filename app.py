@@ -443,7 +443,7 @@ HTML_TEMPLATE = """
             <div class="preset-grid">
                 <button class="control-elem" onclick="adjustTemp(-5)">-5°</button>
                 <button class="control-elem" onclick="adjustTemp(5)">+5°</button>
-                <button class="control-elem" onclick="setPreset(200)">200°</button>
+                <button class="control-elem" onclick="setPreset(150)">Smoke</button>
                 <button class="control-elem" onclick="setPreset(225)">225°</button>
                 <button class="control-elem" onclick="setPreset(250)">250°</button>
                 <button class="control-elem" onclick="setPreset(275)">275°</button>
@@ -972,8 +972,10 @@ HTML_TEMPLATE = """
                 currentTarget = parseInt(data.command.setPoint, 10);
                 activeSession = data.active_session;
 
+                setPointToOutput = data.command.setPoint === 150 ? 'Smoke' : data.command.setPoint + '°F';
+
                 document.getElementById('currentTemp').innerText = isOnline ? (data.state.temp + '°F') : '--';
-                document.getElementById('targetTemp').innerText = isOnline ? (data.command.setPoint + '°F') : '--';
+                document.getElementById('targetTemp').innerText = isOnline ? (setPointToOutput) : '--';
                 document.getElementById('probe1').innerText = (isOnline && data.state.probe1) ? data.state.probe1 + '°F' : 'Unplugged';
                 document.getElementById('probe2').innerText = (isOnline && data.state.probe2) ? data.state.probe2 + '°F' : 'Unplugged';
                 document.getElementById('probe3').innerText = (isOnline && data.state.probe3) ? data.state.probe3 + '°F' : 'Unplugged';
