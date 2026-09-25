@@ -1612,6 +1612,9 @@ def export_csv():
 def set_setpoint():
     temp = request.args.get('temp', type=int)
     if temp:
+        if temp < 150 or temp > 500:
+            return jsonify({"success": False, "error": "Temp must be between 150 and 500"}), 400
+
         grill_command["setPoint"] = temp
         return jsonify({"success": True, "setPoint": temp})
     return jsonify({"success": False, "error": "Invalid temp"}), 400
