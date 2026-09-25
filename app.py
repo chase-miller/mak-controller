@@ -41,10 +41,12 @@ app_settings = {
 
 min_user_temp = 150
 max_user_temp = 500
+smoke_preset_temp = 175
+grill_preset_temp = 500
 
 # Active outbound commands served to the grill
 grill_command = {
-    "setPoint": 175,
+    "setPoint": smoke_preset_temp,
     "potStatus": "",
     "cookMode": 1,
     "zoneProbe": 1,
@@ -446,10 +448,13 @@ HTML_TEMPLATE = """
             <div class="preset-grid">
                 <button class="control-elem" onclick="adjustTemp(-5)">-5°</button>
                 <button class="control-elem" onclick="adjustTemp(5)">+5°</button>
+                <button class="control-elem" onclick="setPreset({{smoke_preset_temp}})">Smoke</button>
                 <button class="control-elem" onclick="setPreset(200)">200°</button>
                 <button class="control-elem" onclick="setPreset(225)">225°</button>
                 <button class="control-elem" onclick="setPreset(250)">250°</button>
                 <button class="control-elem" onclick="setPreset(275)">275°</button>
+                <button class="control-elem" onclick="setPreset(400)">400°</button>
+                <button class="control-elem" onclick="setPreset({{grill_preset_temp}})">Grill</button>
             </div>
         </div>
 
@@ -617,7 +622,7 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        let currentTarget = 175;
+        let currentTarget = {{smoke_preset_temp}};
         let isOnline = false;
         let isCooldown = false;
         let commandedPower = 1;
@@ -975,8 +980,15 @@ HTML_TEMPLATE = """
                 currentTarget = parseInt(data.command.setPoint, 10);
                 activeSession = data.active_session;
 
+                const setpointMap = {
+                    {{smoke_preset_temp}}: 'Smoke',
+                    {{grill_preset_temp}}: 'Grill'
+                };
+
+                const setpointToOutput = setpointMap[data.command.setPoint] ?? data.command.setPoint + '°F';
+
                 document.getElementById('currentTemp').innerText = isOnline ? (data.state.temp + '°F') : '--';
-                document.getElementById('targetTemp').innerText = isOnline ? (data.command.setPoint + '°F') : '--';
+                document.getElementById('targetTemp').innerText = isOnline ? (setpointToOutput) : '--';
                 document.getElementById('probe1').innerText = (isOnline && data.state.probe1) ? data.state.probe1 + '°F' : 'Unplugged';
                 document.getElementById('probe2').innerText = (isOnline && data.state.probe2) ? data.state.probe2 + '°F' : 'Unplugged';
                 document.getElementById('probe3').innerText = (isOnline && data.state.probe3) ? data.state.probe3 + '°F' : 'Unplugged';
@@ -1179,9 +1191,16 @@ HTML_TEMPLATE = """
             await fetch(`/api/setpoint?temp=${temp}`, { method: 'POST' });
             updateStatus();
         }
+        
+        function getNextTemp(delta) {
+            const nextTemp = currentTarget + delta;
+            if (nextTemp < {{min_user_temp}}) return {{min_user_temp}};
+            if (nextTemp > {{max_user_temp}}) return {{max_user_temp}};
+            return nextTemp;
+        }
 
         async function adjustTemp(delta) {
-            const nextTemp = currentTarget + delta;
+            const nextTemp = getNextTemp(delta);
             await setPreset(nextTemp);
         }
 
@@ -1214,7 +1233,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def dashboard():
-    return render_template_string(HTML_TEMPLATE, min_user_temp=min_user_temp, max_user_temp=max_user_temp)
+    return render_template_string(HTML_TEMPLATE, min_user_temp=min_user_temp, max_user_temp=max_user_temp, smoke_preset_temp=smoke_preset_temp, grill_preset_temp=grill_preset_temp)
 
 @app.route('/GrillService/Service', methods=['POST'])
 def grill_service():
@@ -1615,8 +1634,8 @@ def export_csv():
 def set_setpoint():
     temp = request.args.get('temp', type=int)
     if temp:
-        if temp < min_user_temp or temp > max_user_temp:
-            return jsonify({"success": False, "error": f"Temp must be between {min_user_temp} and {max_user_temp}"}), 400
+        if (temp < min_user_temp or temp > max_user_temp) and temp not in (smoke_preset_temp, grill_preset_temp):
+            return jsonify({"success": False, "error": f"Temp must be between {min_user_temp} and {max_user_temp} or {smoke_preset_temp} (Smoke) or {grill_preset_temp} (Grill"}), 400
 
         grill_command["setPoint"] = temp
         return jsonify({"success": True, "setPoint": temp})
