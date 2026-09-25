@@ -443,10 +443,13 @@ HTML_TEMPLATE = """
             <div class="preset-grid">
                 <button class="control-elem" onclick="adjustTemp(-5)">-5°</button>
                 <button class="control-elem" onclick="adjustTemp(5)">+5°</button>
-                <button class="control-elem" onclick="setPreset(150)">Smoke</button>
+                <button class="control-elem" onclick="setPreset(175)">Smoke</button>
+                <button class="control-elem" onclick="setPreset(200)">200°</button>
                 <button class="control-elem" onclick="setPreset(225)">225°</button>
                 <button class="control-elem" onclick="setPreset(250)">250°</button>
                 <button class="control-elem" onclick="setPreset(275)">275°</button>
+                <button class="control-elem" onclick="setPreset(400)">400°</button>
+                <button class="control-elem" onclick="setPreset(455)">Grill</button>
             </div>
         </div>
 
@@ -972,7 +975,12 @@ HTML_TEMPLATE = """
                 currentTarget = parseInt(data.command.setPoint, 10);
                 activeSession = data.active_session;
 
-                setPointToOutput = data.command.setPoint === 150 ? 'Smoke' : data.command.setPoint + '°F';
+                const setPointMap = {
+                    175: 'Smoke',
+                    455: 'Grill'
+                };
+
+                setPointToOutput = setPointMap[data.command.setPoint] ?? data.command.setPoint + '°F';
 
                 document.getElementById('currentTemp').innerText = isOnline ? (data.state.temp + '°F') : '--';
                 document.getElementById('targetTemp').innerText = isOnline ? (setPointToOutput) : '--';
