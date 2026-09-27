@@ -1189,9 +1189,16 @@ HTML_TEMPLATE = """
             await fetch(`/api/setpoint?temp=${temp}`, { method: 'POST' });
             updateStatus();
         }
+        
+        function getNextTemp(delta) {
+            const nextTemp = currentTarget + delta;
+            if (nextTemp < 150) return 150;
+            if (nextTemp > 500) return 500; // Grill
+            return nextTemp;
+        }
 
         async function adjustTemp(delta) {
-            const nextTemp = currentTarget + delta;
+            const nextTemp = getNextTemp(delta);
             await setPreset(nextTemp);
         }
 
