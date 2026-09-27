@@ -452,7 +452,7 @@ HTML_TEMPLATE = """
                 <button class="control-elem" onclick="setPreset(250)">250°</button>
                 <button class="control-elem" onclick="setPreset(275)">275°</button>
                 <button class="control-elem" onclick="setPreset(400)">400°</button>
-                <button class="control-elem" onclick="setPreset(455)">Grill</button>
+                <button class="control-elem" onclick="setPreset(500)">Grill</button>
             </div>
         </div>
 
@@ -980,7 +980,7 @@ HTML_TEMPLATE = """
 
                 const setpointMap = {
                     175: 'Smoke',
-                    455: 'Grill'
+                    500: 'Grill'
                 };
 
                 setpointToOutput = setpointMap[data.command.setPoint] ?? data.command.setPoint + '°F';
