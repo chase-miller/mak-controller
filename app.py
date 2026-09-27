@@ -1193,8 +1193,11 @@ HTML_TEMPLATE = """
         }
         
         function getNextTemp(delta) {
+            if (currentTarget < {{min_temp}} && delta > 0) // +5 when on Smoke
+                return {{min_temp}};
+            
             const nextTemp = currentTarget + delta;
-            if (nextTemp < {{min_temp}}) return {{min_temp}};
+            if (nextTemp < {{min_temp}}) return {{smoke_temp}};
             if (nextTemp > {{max_temp}}) return {{grill_temp}};
             return nextTemp;
         }
