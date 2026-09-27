@@ -41,6 +41,8 @@ app_settings = {
 
 min_temp = 150
 max_temp = 500
+smoke_temp = 175
+grill_temp = 500
 
 # Active outbound commands served to the grill
 grill_command = {
