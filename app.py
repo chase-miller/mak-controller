@@ -39,10 +39,10 @@ app_settings = {
     "ntfy_topic": os.environ.get("NTFY_TOPIC", "")
 }
 
-min_temp = 150
-max_temp = 500
+min_temp = 200
+max_temp = 450
 smoke_temp = 175
-grill_temp = 500
+grill_temp = 455
 
 # Active outbound commands served to the grill
 grill_command = {
