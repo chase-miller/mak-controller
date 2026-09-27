@@ -983,7 +983,7 @@ HTML_TEMPLATE = """
                     500: 'Grill'
                 };
 
-                setpointToOutput = setpointMap[data.command.setPoint] ?? data.command.setPoint + '°F';
+                const setpointToOutput = setpointMap[data.command.setPoint] ?? data.command.setPoint + '°F';
 
                 document.getElementById('currentTemp').innerText = isOnline ? (data.state.temp + '°F') : '--';
                 document.getElementById('targetTemp').innerText = isOnline ? (setpointToOutput) : '--';
