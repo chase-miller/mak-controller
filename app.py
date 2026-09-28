@@ -46,7 +46,7 @@ grill_temp = 500
 
 # Active outbound commands served to the grill
 grill_command = {
-    "setPoint": temp_ranges["smoke"],
+    "setPoint": smoke_temp,
     "potStatus": "",
     "cookMode": 1,
     "zoneProbe": 1,
