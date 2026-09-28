@@ -39,6 +39,9 @@ app_settings = {
     "ntfy_topic": os.environ.get("NTFY_TOPIC", "")
 }
 
+min_temp = 150
+max_temp = 500
+
 # Active outbound commands served to the grill
 grill_command = {
     "setPoint": 175,
@@ -81,19 +84,14 @@ automation_state = {
     "stages": []
 }
 
-temp_ranges = {
-    "min": 150,
-    "max": 500,
-}
-
 DEFAULT_RECIPES = [
     {
         "name": "Pork Shoulder / Brisket (Stall, Wrap & Rest)",
         "stages": [
             {"name": "Initial Smoke", "setpoint": 200, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 165},
             {"name": "Bark & Finish", "setpoint": 250, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 203},
-            {"name": "Cool Down to Slice", "setpoint": temp_ranges["min"], "trigger_type": "probe1", "trigger_cond": "lte", "trigger_val": temp_ranges["min"]},
-            {"name": "Safe Hold", "setpoint": temp_ranges["min"], "trigger_type": "hold", "trigger_cond": "gte", "trigger_val": 0}
+            {"name": "Cool Down to Slice", "setpoint": min_temp, "trigger_type": "probe1", "trigger_cond": "lte", "trigger_val": min_temp},
+            {"name": "Safe Hold", "setpoint": min_temp, "trigger_type": "hold", "trigger_cond": "gte", "trigger_val": 0}
         ]
     },
     {
@@ -1216,7 +1214,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def dashboard():
-    return render_template_string(HTML_TEMPLATE, min_temp=temp_ranges["min"], max_temp=temp_ranges["max"])
+    return render_template_string(HTML_TEMPLATE, min_temp=min_temp, max_temp=max_temp)
 
 @app.route('/GrillService/Service', methods=['POST'])
 def grill_service():
@@ -1617,8 +1615,8 @@ def export_csv():
 def set_setpoint():
     temp = request.args.get('temp', type=int)
     if temp:
-        if temp < temp_ranges["min"] or temp > temp_ranges["max"]:
-            return jsonify({"success": False, "error": f"Temp must be between {temp_ranges['min']} and {temp_ranges['max']}"}), 400
+        if temp < min_temp or temp > max_temp:
+            return jsonify({"success": False, "error": f"Temp must be between {min_temp} and {max_temp}"}), 400
 
         grill_command["setPoint"] = temp
         return jsonify({"success": True, "setPoint": temp})
