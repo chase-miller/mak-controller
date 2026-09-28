@@ -39,6 +39,9 @@ app_settings = {
     "ntfy_topic": os.environ.get("NTFY_TOPIC", "")
 }
 
+min_temp = 150
+max_temp = 500
+
 # Active outbound commands served to the grill
 grill_command = {
     "setPoint": 175,
@@ -87,8 +90,8 @@ DEFAULT_RECIPES = [
         "stages": [
             {"name": "Initial Smoke", "setpoint": 200, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 165},
             {"name": "Bark & Finish", "setpoint": 250, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 203},
-            {"name": "Cool Down to Slice", "setpoint": 150, "trigger_type": "probe1", "trigger_cond": "lte", "trigger_val": 150},
-            {"name": "Safe Hold", "setpoint": 150, "trigger_type": "hold", "trigger_cond": "gte", "trigger_val": 0}
+            {"name": "Cool Down to Slice", "setpoint": min_temp, "trigger_type": "probe1", "trigger_cond": "lte", "trigger_val": min_temp},
+            {"name": "Safe Hold", "setpoint": min_temp, "trigger_type": "hold", "trigger_cond": "gte", "trigger_val": 0}
         ]
     },
     {
@@ -437,7 +440,7 @@ HTML_TEMPLATE = """
         <div class="card" id="controlCard">
             <div class="label">Adjust SetPoint</div>
             <div class="input-row">
-                <input type="number" id="tempInput" min="150" max="500" step="5" placeholder="Enter °F">
+                <input type="number" id="tempInput" min="{{min_temp}}" max="{{max_temp}}" step="5" placeholder="Enter °F">
                 <button class="set-btn control-elem" onclick="sendCustomTemp()">Set</button>
             </div>
             <div class="preset-grid">
@@ -807,7 +810,7 @@ HTML_TEMPLATE = """
                     </div>
                     <div>
                         <span class="label" style="font-size: 0.75rem;">SetPoint (°F)</span>
-                        <input type="number" class="stage-temp-input" min="150" max="500" step="5" value="${setpoint}">
+                        <input type="number" class="stage-temp-input" min="{{min_temp}}" max="{{max_temp}}" step="5" value="${setpoint}">
                     </div>
                     <div>
                         <span class="label" style="font-size: 0.75rem;">Trigger Type</span>
@@ -1211,7 +1214,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def dashboard():
-    return render_template_string(HTML_TEMPLATE)
+    return render_template_string(HTML_TEMPLATE, min_temp=min_temp, max_temp=max_temp)
 
 @app.route('/GrillService/Service', methods=['POST'])
 def grill_service():
@@ -1612,6 +1615,9 @@ def export_csv():
 def set_setpoint():
     temp = request.args.get('temp', type=int)
     if temp:
+        if temp < min_temp or temp > max_temp:
+            return jsonify({"success": False, "error": f"Temp must be between {min_temp} and {max_temp}"}), 400
+
         grill_command["setPoint"] = temp
         return jsonify({"success": True, "setPoint": temp})
     return jsonify({"success": False, "error": "Invalid temp"}), 400
