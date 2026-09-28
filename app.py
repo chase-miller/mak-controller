@@ -46,7 +46,7 @@ grill_temp = 500
 
 # Active outbound commands served to the grill
 grill_command = {
-    "setPoint": 175,
+    "setPoint": temp_ranges["smoke"],
     "potStatus": "",
     "cookMode": 1,
     "zoneProbe": 1,
@@ -448,13 +448,13 @@ HTML_TEMPLATE = """
             <div class="preset-grid">
                 <button class="control-elem" onclick="adjustTemp(-5)">-5°</button>
                 <button class="control-elem" onclick="adjustTemp(5)">+5°</button>
-                <button class="control-elem" onclick="setPreset(175)">Smoke</button>
+                <button class="control-elem" onclick="setPreset({{smoke_temp}})">Smoke</button>
                 <button class="control-elem" onclick="setPreset(200)">200°</button>
                 <button class="control-elem" onclick="setPreset(225)">225°</button>
                 <button class="control-elem" onclick="setPreset(250)">250°</button>
                 <button class="control-elem" onclick="setPreset(275)">275°</button>
                 <button class="control-elem" onclick="setPreset(400)">400°</button>
-                <button class="control-elem" onclick="setPreset(500)">Grill</button>
+                <button class="control-elem" onclick="setPreset({{grill_temp}})">Grill</button>
             </div>
         </div>
 
@@ -622,7 +622,7 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        let currentTarget = 175;
+        let currentTarget = {{smoke_temp}};
         let isOnline = false;
         let isCooldown = false;
         let commandedPower = 1;
@@ -981,8 +981,8 @@ HTML_TEMPLATE = """
                 activeSession = data.active_session;
 
                 const setpointMap = {
-                    175: 'Smoke',
-                    500: 'Grill'
+                    {{smoke_temp}}: 'Smoke',
+                    {{grill_temp}}: 'Grill'
                 };
 
                 const setpointToOutput = setpointMap[data.command.setPoint] ?? data.command.setPoint + '°F';
@@ -1194,8 +1194,8 @@ HTML_TEMPLATE = """
         
         function getNextTemp(delta) {
             const nextTemp = currentTarget + delta;
-            if (nextTemp < 150) return 150;
-            if (nextTemp > 500) return 500; // Grill
+            if (nextTemp < {{min_temp}}) return {{min_temp}};
+            if (nextTemp > {{max_temp}}) return {{grill_temp}};
             return nextTemp;
         }
 
@@ -1233,7 +1233,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def dashboard():
-    return render_template_string(HTML_TEMPLATE, min_temp=min_temp, max_temp=max_temp)
+    return render_template_string(HTML_TEMPLATE, min_temp=min_temp, max_temp=max_temp, smoke_temp=smoke_temp, grill_temp=grill_temp)
 
 @app.route('/GrillService/Service', methods=['POST'])
 def grill_service():
