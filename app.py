@@ -1634,8 +1634,8 @@ def export_csv():
 def set_setpoint():
     temp = request.args.get('temp', type=int)
     if temp:
-        if temp < min_temp or temp > max_temp:
-            return jsonify({"success": False, "error": f"Temp must be between {min_temp} and {max_temp}"}), 400
+        if (temp < min_temp or temp > max_temp) and temp not in (smoke_temp, grill_temp):
+            return jsonify({"success": False, "error": f"Temp must be between {min_temp} and {max_temp} or {smoke_temp} (Smoke) or {grill_temp} (Grill"}), 400
 
         grill_command["setPoint"] = temp
         return jsonify({"success": True, "setPoint": temp})
