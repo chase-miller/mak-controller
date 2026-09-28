@@ -81,6 +81,11 @@ automation_state = {
     "stages": []
 }
 
+temp_ranges = {
+    "min": 150,
+    "max": 500,
+}
+
 DEFAULT_RECIPES = [
     {
         "name": "Pork Shoulder / Brisket (Stall, Wrap & Rest)",
@@ -1612,8 +1617,8 @@ def export_csv():
 def set_setpoint():
     temp = request.args.get('temp', type=int)
     if temp:
-        if temp < 150 or temp > 500:
-            return jsonify({"success": False, "error": "Temp must be between 150 and 500"}), 400
+        if temp < temp_ranges["min"] or temp > temp_ranges["max"]:
+            return jsonify({"success": False, "error": f"Temp must be between {temp_ranges['min']} and {temp_ranges['max']}"}), 400
 
         grill_command["setPoint"] = temp
         return jsonify({"success": True, "setPoint": temp})
