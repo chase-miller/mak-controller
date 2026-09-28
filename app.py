@@ -39,10 +39,10 @@ app_settings = {
     "ntfy_topic": os.environ.get("NTFY_TOPIC", "")
 }
 
-min_temp = 150
-max_temp = 500
+min_temp = 200
+max_temp = 450
 smoke_temp = 175
-grill_temp = 500
+grill_temp = 455
 
 # Active outbound commands served to the grill
 grill_command = {
@@ -1193,8 +1193,11 @@ HTML_TEMPLATE = """
         }
         
         function getNextTemp(delta) {
+            if (currentTarget < {{min_temp}} && delta > 0) // +5 when on Smoke
+                return {{min_temp}};
+            
             const nextTemp = currentTarget + delta;
-            if (nextTemp < {{min_temp}}) return {{min_temp}};
+            if (nextTemp < {{min_temp}}) return {{smoke_temp}};
             if (nextTemp > {{max_temp}}) return {{grill_temp}};
             return nextTemp;
         }
