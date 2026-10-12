@@ -39,9 +39,17 @@ app_settings = {
     "ntfy_topic": os.environ.get("NTFY_TOPIC", "")
 }
 
+min_user_temp = 200
+max_user_temp = 450
+smoke_preset_temp = 175
+grill_preset_temp = 455
+
+absolute_min_temp = min(min_user_temp, smoke_preset_temp)
+absolute_max_temp = max(max_user_temp, grill_preset_temp)
+
 # Active outbound commands served to the grill
 grill_command = {
-    "setPoint": 175,
+    "setPoint": smoke_preset_temp,
     "potStatus": "",
     "cookMode": 1,
     "zoneProbe": 1,
@@ -87,8 +95,8 @@ DEFAULT_RECIPES = [
         "stages": [
             {"name": "Initial Smoke", "setpoint": 200, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 165},
             {"name": "Bark & Finish", "setpoint": 250, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 203},
-            {"name": "Cool Down to Slice", "setpoint": 150, "trigger_type": "probe1", "trigger_cond": "lte", "trigger_val": 150},
-            {"name": "Safe Hold", "setpoint": 150, "trigger_type": "hold", "trigger_cond": "gte", "trigger_val": 0}
+            {"name": "Cool Down to Slice", "setpoint": absolute_min_temp, "trigger_type": "probe1", "trigger_cond": "lte", "trigger_val": absolute_min_temp},
+            {"name": "Safe Hold", "setpoint": absolute_min_temp, "trigger_type": "hold", "trigger_cond": "gte", "trigger_val": 0}
         ]
     },
     {
@@ -104,7 +112,7 @@ DEFAULT_RECIPES = [
         "name": "Reverse Sear Steak",
         "stages": [
             {"name": "Gentle Smoke", "setpoint": 225, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 115},
-            {"name": "High Heat Sear", "setpoint": 450, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 130}
+            {"name": "High Heat Sear", "setpoint": absolute_max_temp, "trigger_type": "probe1", "trigger_cond": "gte", "trigger_val": 130}
         ]
     }
 ]
@@ -297,6 +305,15 @@ def evaluate_automation(now):
             logger.info("[AUTOMATION] %s", msg)
             send_push_notification("Automation Complete", msg, "high")
 
+def verify_temp(temp):
+    if not temp:
+        return jsonify({"success": False, "error": "Invalid temp"}), 400
+        
+    if (temp < min_user_temp or temp > max_user_temp) and temp not in (smoke_preset_temp, grill_preset_temp):
+        return jsonify({"success": False, "error": f"Temp must be between {min_user_temp} and {max_user_temp} or {smoke_preset_temp} (Smoke) or {grill_preset_temp} (Grill"}), 400
+    
+    return None
+
 # --- Frontend HTML / JS ---
 
 HTML_TEMPLATE = """
@@ -438,16 +455,19 @@ HTML_TEMPLATE = """
         <div class="card" id="controlCard">
             <div class="label">Adjust SetPoint</div>
             <div class="input-row">
-                <input type="number" id="tempInput" min="150" max="500" step="5" placeholder="Enter °F">
+                <input type="number" id="tempInput" min="{{min_user_temp}}" max="{{max_user_temp}}" step="5" placeholder="Enter °F">
                 <button class="set-btn control-elem" onclick="sendCustomTemp()">Set</button>
             </div>
             <div class="preset-grid">
                 <button class="control-elem" onclick="adjustTemp(-5)">-5°</button>
                 <button class="control-elem" onclick="adjustTemp(5)">+5°</button>
+                <button class="control-elem" onclick="setPreset({{smoke_preset_temp}})">Smoke</button>
                 <button class="control-elem" onclick="setPreset(200)">200°</button>
                 <button class="control-elem" onclick="setPreset(225)">225°</button>
                 <button class="control-elem" onclick="setPreset(250)">250°</button>
                 <button class="control-elem" onclick="setPreset(275)">275°</button>
+                <button class="control-elem" onclick="setPreset(400)">400°</button>
+                <button class="control-elem" onclick="setPreset({{grill_preset_temp}})">Grill</button>
             </div>
         </div>
 
@@ -615,7 +635,7 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        let currentTarget = 175;
+        let currentTarget = {{smoke_preset_temp}};
         let isOnline = false;
         let isCooldown = false;
         let commandedPower = 1;
@@ -808,7 +828,7 @@ HTML_TEMPLATE = """
                     </div>
                     <div>
                         <span class="label" style="font-size: 0.75rem;">SetPoint (°F)</span>
-                        <input type="number" class="stage-temp-input" min="150" max="500" step="5" value="${setpoint}">
+                        <input type="number" class="stage-temp-input" min="{{min_user_temp}}" max="{{max_user_temp}}" step="5" value="${setpoint}">
                     </div>
                     <div>
                         <span class="label" style="font-size: 0.75rem;">Trigger Type</span>
@@ -895,6 +915,11 @@ HTML_TEMPLATE = """
                 alert("Please add at least one stage.");
                 return;
             }
+            
+            if (stages.some(stage => (stage.setpoint < {{min_user_temp}} || stage.setpoint > {{max_user_temp}}) && (stage.setpoint != {{smoke_preset_temp}} && stage.setpoint != {{grill_preset_temp}}))) {
+                alert(`Setpoint values must be between {{min_user_temp}}°F and {{max_user_temp}}°F or {{smoke_preset_temp}}°F (Smoke) or {{grill_preset_temp}}°F (Grill).`);
+                return;
+            }
 
             const payload = { id: activeRecipeId, name: name, stages: stages };
             const res = await fetch('/api/recipes', {
@@ -973,8 +998,15 @@ HTML_TEMPLATE = """
                 currentTarget = parseInt(data.command.setPoint, 10);
                 activeSession = data.active_session;
 
+                const setpointMap = {
+                    {{smoke_preset_temp}}: 'Smoke',
+                    {{grill_preset_temp}}: 'Grill'
+                };
+
+                const setpointToOutput = setpointMap[data.command.setPoint] ?? data.command.setPoint + '°F';
+
                 document.getElementById('currentTemp').innerText = isOnline ? (data.state.temp + '°F') : '--';
-                document.getElementById('targetTemp').innerText = isOnline ? (data.command.setPoint + '°F') : '--';
+                document.getElementById('targetTemp').innerText = isOnline ? (setpointToOutput) : '--';
                 document.getElementById('probe1').innerText = (isOnline && data.state.probe1) ? data.state.probe1 + '°F' : 'Unplugged';
                 document.getElementById('probe2').innerText = (isOnline && data.state.probe2) ? data.state.probe2 + '°F' : 'Unplugged';
                 document.getElementById('probe3').innerText = (isOnline && data.state.probe3) ? data.state.probe3 + '°F' : 'Unplugged';
@@ -1184,9 +1216,19 @@ HTML_TEMPLATE = """
             await fetch(`/api/setpoint?temp=${temp}`, { method: 'POST' });
             updateStatus();
         }
+        
+        function getNextTemp(delta) {
+            if (currentTarget < {{min_user_temp}} && delta > 0) // +5 when on Smoke
+                return {{min_user_temp}};
+            
+            const nextTemp = currentTarget + delta;
+            if (nextTemp < {{min_user_temp}}) return {{smoke_preset_temp}};
+            if (nextTemp > {{max_user_temp}}) return {{grill_preset_temp}};
+            return nextTemp;
+        }
 
         async function adjustTemp(delta) {
-            const nextTemp = currentTarget + delta;
+            const nextTemp = getNextTemp(delta);
             await setPreset(nextTemp);
         }
 
@@ -1219,7 +1261,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def dashboard():
-    return render_template_string(HTML_TEMPLATE)
+    return render_template_string(HTML_TEMPLATE, min_user_temp=min_user_temp, max_user_temp=max_user_temp, smoke_preset_temp=smoke_preset_temp, grill_preset_temp=grill_preset_temp)
 
 @app.route('/GrillService/Service', methods=['POST'])
 def grill_service():
@@ -1424,6 +1466,11 @@ def save_recipe():
 
     if not name or not stages:
         return jsonify({"success": False, "error": "Name and stages required"}), 400
+    
+    for stage in stages:
+        temp_error = verify_temp(stage.get("setpoint"))
+        if temp_error:
+            return temp_error
 
     stages_json = json.dumps(stages)
     with get_db_connection() as conn:
@@ -1619,10 +1666,13 @@ def export_csv():
 @app.route('/api/setpoint', methods=['POST'])
 def set_setpoint():
     temp = request.args.get('temp', type=int)
-    if temp:
-        grill_command["setPoint"] = temp
-        return jsonify({"success": True, "setPoint": temp})
-    return jsonify({"success": False, "error": "Invalid temp"}), 400
+    
+    temp_error = verify_temp(temp)
+    if temp_error:
+        return temp_error
+
+    grill_command["setPoint"] = temp
+    return jsonify({"success": True, "setPoint": temp})
 
 @app.route('/api/power', methods=['POST'])
 def set_power():
